@@ -4,7 +4,6 @@ import type React from "react"
 
 import { useState, useEffect, useCallback } from "react"
 import { ethers } from "ethers"
-import type {} from "ethers"
 import WalletConnect from "@/components/wallet-connect"
 import TicTacToeBoard from "@/components/tic-tac-toe-board"
 import GameLobby from "@/components/game-lobby"
@@ -23,19 +22,27 @@ export default function TicTacToeGame() {
   const [isMoving, setIsMoving] = useState(false)
   const [contractAddress, setContractAddress] = useState<string>("")
   const [isContractAddressValid, setIsContractAddressValid] = useState<boolean>(false)
+  const [isClient, setIsClient] = useState(false)
+
+  // Set isClient to true when component mounts (client-side only)
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   const handleWalletConnect = (provider: ethers.BrowserProvider, address: string) => {
     // Check if we have a saved contract address in localStorage
-    const savedAddress = localStorage.getItem("tictactoe_contract_address")
-    if (savedAddress) {
-      setContractAddress(savedAddress)
-      if (ContractService.isValidContractAddress(savedAddress)) {
-        setIsContractAddressValid(true)
-        try {
-          setContractService(new ContractService(provider, address, savedAddress))
-        } catch (err) {
-          console.error("Error creating contract service:", err)
-          setError("Failed to connect to the contract. Please check the contract address.")
+    if (typeof window !== "undefined") {
+      const savedAddress = localStorage.getItem("tictactoe_contract_address")
+      if (savedAddress) {
+        setContractAddress(savedAddress)
+        if (ContractService.isValidContractAddress(savedAddress)) {
+          setIsContractAddressValid(true)
+          try {
+            setContractService(new ContractService(provider, address, savedAddress))
+          } catch (err) {
+            console.error("Error creating contract service:", err)
+            setError("Failed to connect to the contract. Please check the contract address.")
+          }
         }
       }
     }
@@ -48,7 +55,7 @@ export default function TicTacToeGame() {
   }
 
   const saveContractAddress = useCallback(() => {
-    if (!isContractAddressValid) return
+    if (!isContractAddressValid || typeof window === "undefined") return
 
     localStorage.setItem("tictactoe_contract_address", contractAddress)
 
@@ -113,7 +120,9 @@ export default function TicTacToeGame() {
   }
 
   const resetContractAddress = () => {
-    localStorage.removeItem("tictactoe_contract_address")
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("tictactoe_contract_address")
+    }
     setContractService(null)
     setContractAddress("")
     setIsContractAddressValid(false)
@@ -167,6 +176,11 @@ export default function TicTacToeGame() {
     return <div className={statusClass}>{statusText}</div>
   }
 
+  // Don't render anything on the server
+  if (!isClient) {
+    return <div className="p-8 text-center">Loading Web3 Tic-Tac-Toe...</div>
+  }
+
   if (!contractService) {
     return (
       <div className="flex flex-col items-center gap-6 p-6 bg-white rounded-lg shadow-md w-full max-w-md">
@@ -176,7 +190,7 @@ export default function TicTacToeGame() {
         </p>
         <WalletConnect onConnect={handleWalletConnect} />
 
-        {window.ethereum && (
+        {typeof window !== "undefined" && window.ethereum && (
           <div className="w-full mt-4">
             <h3 className="text-lg font-semibold mb-2">Contract Address</h3>
             <p className="text-sm text-gray-600 mb-2">Enter the address of your deployed TicTacToe contract:</p>

@@ -2,10 +2,20 @@
 
 import { Button } from "@/components/ui/button"
 import { ChevronDown, ChevronUp, ExternalLink } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 export default function DeploymentGuide() {
   const [isOpen, setIsOpen] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
+
+  // Only run on client-side
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  if (!isMounted) {
+    return null
+  }
 
   return (
     <div className="w-full mt-4 border rounded-lg overflow-hidden">

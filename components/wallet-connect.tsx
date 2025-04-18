@@ -6,14 +6,20 @@ import { ethers } from "ethers"
 
 export default function WalletConnect({
   onConnect,
-}: { onConnect: (provider: ethers.BrowserProvider, address: string) => void }) {
+}: {
+  onConnect: (provider: ethers.BrowserProvider, address: string) => void
+}) {
   const [address, setAddress] = useState<string | null>(null)
   const [isConnecting, setIsConnecting] = useState(false)
+  const [isMetaMaskAvailable, setIsMetaMaskAvailable] = useState(false)
 
   useEffect(() => {
-    // Check if already connected
-    const checkConnection = async () => {
-      if (window.ethereum) {
+    // Check if MetaMask is available
+    if (typeof window !== "undefined" && window.ethereum) {
+      setIsMetaMaskAvailable(true)
+
+      // Check if already connected
+      const checkConnection = async () => {
         try {
           const provider = new ethers.BrowserProvider(window.ethereum)
           const accounts = await provider.listAccounts()
@@ -26,13 +32,13 @@ export default function WalletConnect({
           console.error("Failed to check wallet connection:", error)
         }
       }
-    }
 
-    checkConnection()
+      checkConnection()
+    }
   }, [onConnect])
 
   const connectWallet = async () => {
-    if (!window.ethereum) {
+    if (typeof window === "undefined" || !window.ethereum) {
       alert("Please install MetaMask to use this app")
       return
     }
@@ -57,6 +63,17 @@ export default function WalletConnect({
 
   const formatAddress = (address: string) => {
     return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`
+  }
+
+  if (!isMetaMaskAvailable) {
+    return (
+      <div className="text-center">
+        <Button disabled className="bg-gray-400">
+          MetaMask Not Available
+        </Button>
+        <p className="mt-2 text-sm text-gray-600">Please install MetaMask to use this app</p>
+      </div>
+    )
   }
 
   return (
